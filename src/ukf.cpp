@@ -83,6 +83,19 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+
+  // todo: initializing
+  // todo: time keeping
+
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR)
+  { 
+    UpdateRadar(meas_package);
+  }
+  else if (meas_package.sensor_type_ == MeasurementPackage::LASER)
+  {
+    UpdateLidar(meas_package);
+  }
+
 }
 
 /**
@@ -204,13 +217,27 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   You'll also need to calculate the lidar NIS.
   */
 
-  /*
+  Eigen::MatrixXd R_laser;
+  R_laser = MatrixXd(2, 2);
+  Eigen::MatrixXd H_laser;
+  H_laser = MatrixXd(2, 5);
 
-   Eigen::MatrixXd R_laser_;
-   Eigen::MatrixXd H_laser_;
-   H_laser_ = MatrixXd(2, 5);
-   H_laser_ << 1, 0, 0, 0, 0, 0, 1, 0, 0, 0;
-  */
+  H_laser << 1, 0, 0, 0, 0, 0, 1, 0, 0, 0;
+  R_laser << 0.0225, 0, 0, 0.0225;
+
+  VectorXd z = meas_package.raw_measurements_;
+
+  VectorXd y = z - H_laser * x_;
+  MatrixXd Ht = H_laser.transpose();
+  MatrixXd S = H_laser * P_ * Ht + R_laser;
+  MatrixXd Si = S.inverse();
+  MatrixXd K = P_ * Ht * Si;
+
+  // new state estimate
+  x_ = x_ + (K * y);
+  long x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * H_laser) * P_;
 }
 
 /**
