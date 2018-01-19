@@ -49,13 +49,13 @@ UKF::UKF() {
   // DO NOT MODIFY measurement noise values above these are provided by the
   // sensor manufacturer.
 
-  /**
-  TODO:
+  // Hint: one or more values initialized above might be wildly off...
 
-  Complete the initialization. See ukf.h for other member properties.
+  // default is: "not initialized"
+  is_initialized_ = false;
 
-  Hint: one or more values initialized above might be wildly off...
-  */
+  // weights dimensions
+  weights_ = VectorXd(2 * n_aug_ + 1);
 
   // set state dimension (CTRV has five states)
   n_x_ = 5;
@@ -68,6 +68,12 @@ UKF::UKF() {
 
   // initial predicted sigma points
   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+
+  // initial state covariance matrix P
+  P_ = MatrixXd::Identity(5, 5);
+  P_(2, 2) = 1000;
+  P_(3, 3) = 1000;
+  P_(4, 4) = 1000;
 }
 
 UKF::~UKF() {}
@@ -77,25 +83,60 @@ UKF::~UKF() {}
  * either radar or laser.
  */
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-  TODO:
+  /*****************************************************************************
+   *  Initialization
+   ****************************************************************************/
 
-  Complete this function! Make sure you switch between lidar and radar
-  measurements.
-  */
+  if (!is_initialized_) {
+    // first measurement
+    cout << "UKF: " << endl;
+    x_ << 1, 1, 1, 1, 1;
 
-  // todo: initializing
-  // todo: time keeping
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      // converting radar measurements (polar coordinates) to carthesian
+      // coordinates
+      float rho = meas_package.raw_measurements_(0);
+      float phi = meas_package.raw_measurements_(1);
+      float rho_dot = meas_package.raw_measurements_(2);
+      x_(0) = rho * cos(phi);
+      x_(1) = rho * sin(phi);
+      x_(2) = 0;
+      x_(3) = 0;
+      x_(4) = 0;
+    }
 
-  if (meas_package.sensor_type_ == MeasurementPackage::RADAR)
-  { 
-    UpdateRadar(meas_package);
+    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+      x_(0) = meas_package.raw_measurements_(0);
+      x_(1) = meas_package.raw_measurements_(1);
+      x_(2) = 0.f;
+      x_(3) = 0.f;
+      x_(4) = 0;
+    }
+
+    time_us_ = meas_package.timestamp_;
+
+    // done initializing, no need to predict or update
+    is_initialized_ = true;
+    return;
   }
-  else if (meas_package.sensor_type_ == MeasurementPackage::LASER)
-  {
+
+  /*****************************************************************************
+   *  Prediction
+   ****************************************************************************/
+
+  // Time keeping: Time from ms to s -> division by 1e6
+  float dt = (meas_package.timestamp_ - time_us_) / 1000000.0;
+  time_us_ = meas_package.timestamp_;
+  Prediction(dt);
+
+  /*****************************************************************************
+   *  Update
+   ****************************************************************************/
+  if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+    UpdateRadar(meas_package);
+  } else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
     UpdateLidar(meas_package);
   }
-
 }
 
 /**
@@ -175,7 +216,6 @@ void UKF::Prediction(double delta_t) {
   }
 
   // set weights_
-  VectorXd weights_ = VectorXd(2 * n_aug_ + 1);
   double weight_0 = lambda_ / (lambda_ + n_aug_);
   weights_(0) = weight_0;
   for (int i = 1; i < 2 * n_aug_ + 1; i++) {  // 2n+1 weights_
@@ -208,14 +248,7 @@ void UKF::Prediction(double delta_t) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Use lidar data to update the belief about the object's
-  position. Modify the state vector, x_, and covariance, P_.
-
-  You'll also need to calculate the lidar NIS.
-  */
+  // todo: You'll also need to calculate the lidar NIS.
 
   Eigen::MatrixXd R_laser;
   R_laser = MatrixXd(2, 2);
@@ -245,14 +278,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Use radar data to update the belief about the object's
-  position. Modify the state vector, x_, and covariance, P_.
-
-  You'll also need to calculate the radar NIS.
-  */
+  // You'll also need to calculate the radar NIS.
 
   // set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
