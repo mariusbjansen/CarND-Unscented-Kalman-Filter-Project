@@ -17,12 +17,16 @@ UKF::UKF() {
 
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
+  // default is: "not initialized"
+  is_initialized_ = false;
 
+  // set state dimension (CTRV has five states)
+  n_x_ = 5;
   // initial state vector
-  x_ = VectorXd(5);
-
+  x_ = VectorXd(n_x_);
+  x_.fill(0.0);
   // initial covariance matrix
-  P_ = MatrixXd(5, 5);
+  P_ = MatrixXd(n_x_, n_x_);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
@@ -51,15 +55,6 @@ UKF::UKF() {
 
   // Hint: one or more values initialized above might be wildly off...
 
-  // default is: "not initialized"
-  is_initialized_ = false;
-
-  // weights dimensions
-  weights_ = VectorXd(2 * n_aug_ + 1);
-
-  // set state dimension (CTRV has five states)
-  n_x_ = 5;
-
   // set augmented dimension
   n_aug_ = 7;
 
@@ -68,6 +63,17 @@ UKF::UKF() {
 
   // initial predicted sigma points
   Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+  
+  // weights dimensions
+  weights_ = VectorXd(2 * n_aug_ + 1);
+  
+    // set weights_
+  double weight_0 = lambda_ / (lambda_ + n_aug_);
+  weights_(0) = weight_0;
+  for (int i = 1; i < 2 * n_aug_ + 1; i++) {  // 2n+1 weights_
+    double weight = 0.5 / (n_aug_ + lambda_);
+    weights_(i) = weight;
+  }
 
   // initial state covariance matrix P
   P_ = MatrixXd::Identity(5, 5);
@@ -215,13 +221,7 @@ void UKF::Prediction(double delta_t) {
     Xsig_pred_(4, i) = yawd_p;
   }
 
-  // set weights_
-  double weight_0 = lambda_ / (lambda_ + n_aug_);
-  weights_(0) = weight_0;
-  for (int i = 1; i < 2 * n_aug_ + 1; i++) {  // 2n+1 weights_
-    double weight = 0.5 / (n_aug_ + lambda_);
-    weights_(i) = weight;
-  }
+
 
   // predicted state mean
   x_.fill(0.0);
