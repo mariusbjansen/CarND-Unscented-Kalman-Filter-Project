@@ -67,6 +67,9 @@ public:
   ///* Sigma point spreading parameter
   double lambda_;
 
+  ///* Store NIS data
+  std::ofstream nis_log;
+
 
   /**
    * Constructor

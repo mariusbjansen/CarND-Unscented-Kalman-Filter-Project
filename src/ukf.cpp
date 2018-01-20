@@ -76,9 +76,12 @@ UKF::UKF() {
     double weight = 0.5 / (n_aug_ + lambda_);
     weights_(i) = weight;
   }
+
+  nis_log.open("nis_log.txt");
 }
 
 UKF::~UKF() {
+  nis_log.close();
 }
 
 /**
@@ -250,17 +253,20 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   VectorXd z = meas_package.raw_measurements_;
 
-  VectorXd y = z - H_laser * x_;
+  VectorXd z_diff = z - H_laser * x_;
   MatrixXd Ht = H_laser.transpose();
   MatrixXd S = H_laser * P_ * Ht + R_laser;
   MatrixXd Si = S.inverse();
   MatrixXd K = P_ * Ht * Si;
 
   // new state estimate
-  x_ = x_ + (K * y);
+  x_ = x_ + (K * z_diff);
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
   P_ = (I - K * H_laser) * P_;
+
+  // NIS: Self evaluate the prediction if it is in approriate proximity to actual measurement
+  nis_log << z_diff.transpose()*S.inverse()*z_diff << endl;
 }
 
 /**
@@ -356,5 +362,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   // update state mean and covariance matrix
   x_ += K * z_diff;
   P_ -= K * S * K.transpose();
+
+  // NIS: Self evaluate the prediction if it is in approriate proximity to actual measurement
+  nis_log << z_diff.transpose()*S.inverse()*z_diff << endl;
+
 }
 
