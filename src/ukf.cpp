@@ -1,6 +1,6 @@
 #include "ukf.h"
-#include <iostream>
 #include "Eigen/Dense"
+#include <iostream>
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -31,16 +31,13 @@ UKF::UKF() {
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
 
-  P_ = MatrixXd::Identity(n_x_, n_x_);
-  P_(2, 2) = 1000;
-  P_(3, 3) = 1000;
-  P_(4, 4) = 1000;
+  P_.fill(0.0);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 1;
 
   // DO NOT MODIFY measurement noise values below these are provided by the
   // sensor manufacturer.
@@ -81,7 +78,8 @@ UKF::UKF() {
   }
 }
 
-UKF::~UKF() {}
+UKF::~UKF() {
+}
 
 /**
  * @param {MeasurementPackage} meas_package The latest measurement data of
@@ -121,7 +119,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     return;
   }
 
-  /*****************************************************************************
+    /*****************************************************************************
    *  Prediction
    ****************************************************************************/
 
@@ -138,7 +136,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   } else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
     UpdateLidar(meas_package);
   }
-}
+  }
 
 /**
  * Predicts sigma points, the state, and the state covariance matrix.
@@ -270,7 +268,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
-  // You'll also need to calculate the radar NIS.
+   // You'll also need to calculate the radar NIS.
 
   // set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
@@ -288,9 +286,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
     double v1 = cos(yaw) * v;
     double v2 = sin(yaw) * v;
-
-    // create matrix for sigma points in measurement space
-    MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
 
     // measurement model
     Zsig(0, i) = sqrt(p_x * p_x + p_y * p_y);                          // r
@@ -362,3 +357,4 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   x_ += K * z_diff;
   P_ -= K * S * K.transpose();
 }
+
