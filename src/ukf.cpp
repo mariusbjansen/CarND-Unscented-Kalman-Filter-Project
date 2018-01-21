@@ -77,11 +77,13 @@ UKF::UKF() {
     weights_(i) = weight;
   }
 
-  nis_log.open("nis_log.txt");
+  nis_radar_log.open("nis_radar_log.txt");
+  nis_laser_log.open("nis_laser_log.txt");
 }
 
 UKF::~UKF() {
-  nis_log.close();
+  nis_radar_log.close();
+  nis_laser_log.close();
 }
 
 /**
@@ -266,7 +268,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   P_ = (I - K * H_laser) * P_;
 
   // NIS: Self evaluate the prediction if it is in approriate proximity to actual measurement
-  nis_log << z_diff.transpose()*S.inverse()*z_diff << endl;
+  nis_laser_log << z_diff.transpose()*S.inverse()*z_diff << endl;
 }
 
 /**
@@ -364,7 +366,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   P_ -= K * S * K.transpose();
 
   // NIS: Self evaluate the prediction if it is in approriate proximity to actual measurement
-  nis_log << z_diff.transpose()*S.inverse()*z_diff << endl;
+  nis_radar_log << z_diff.transpose()*S.inverse()*z_diff << endl;
 
 }
 

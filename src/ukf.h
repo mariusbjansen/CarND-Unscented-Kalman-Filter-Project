@@ -68,7 +68,8 @@ public:
   double lambda_;
 
   ///* Store NIS data
-  std::ofstream nis_log;
+  std::ofstream nis_radar_log;
+  std::ofstream nis_laser_log;
 
 
   /**
